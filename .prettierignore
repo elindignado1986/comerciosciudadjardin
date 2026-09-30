@@ -1,0 +1,6 @@
+node_modules
+.next
+.checks
+package-lock.json
+data
+supabase/migrations/*_boundary.sql
