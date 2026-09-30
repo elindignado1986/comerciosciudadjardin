@@ -4,6 +4,7 @@ import { serviceDb } from "@/lib/supabase/server";
 import { HttpError } from "@/lib/auth/admin";
 import { ZodError } from "zod";
 import { appUrl } from "@/lib/config";
+import { acceptsTurnstileResult } from "@/lib/auth/turnstile-policy";
 export function checkOrigin(req: Request) {
   const origin = req.headers.get("origin");
   if (!origin || origin !== new URL(appUrl()).origin)
@@ -51,7 +52,18 @@ export async function verifyCaptcha(token: string) {
     },
   );
   const data = await result.json();
-  if (!data.success || data.hostname !== new URL(appUrl()).hostname)
+  if (
+    !acceptsTurnstileResult({
+      success: data.success === true,
+      hostname: data.hostname,
+      expectedHostname: new URL(appUrl()).hostname,
+      nodeEnv: process.env.NODE_ENV,
+      vercel: process.env.VERCEL,
+      siteKey: process.env.TURNSTILE_SITE_KEY,
+      secretKey: process.env.TURNSTILE_SECRET_KEY,
+      token,
+    })
+  )
     throw new HttpError(
       400,
       "Completá nuevamente la verificación de seguridad.",

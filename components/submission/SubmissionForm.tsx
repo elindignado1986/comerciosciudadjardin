@@ -9,12 +9,18 @@ import Turnstile from "@/components/ui/Turnstile";
 import { categories } from "@/lib/config";
 import { submissionSchema } from "@/lib/validation";
 import type { PublicBusiness } from "@/lib/types";
-export default function SubmissionForm({ siteKey }: { siteKey: string }) {
-  const [point, setPoint] = useState<[number, number] | null>(null),
-    [focus, setFocus] = useState<[number, number] | null>(null),
+export default function SubmissionForm({
+  siteKey,
+  initialPoint = null,
+}: {
+  siteKey: string;
+  initialPoint?: [number, number] | null;
+}) {
+  const [point, setPoint] = useState<[number, number] | null>(initialPoint),
+    [focus, setFocus] = useState<[number, number] | null>(initialPoint),
     [address, setAddress] = useState(""),
     [source, setSource] = useState("manual"),
-    [adjusted, setAdjusted] = useState(false),
+    [adjusted, setAdjusted] = useState(Boolean(initialPoint)),
     [confirmed, setConfirmed] = useState(false),
     [token, setToken] = useState(""),
     [status, setStatus] = useState(""),

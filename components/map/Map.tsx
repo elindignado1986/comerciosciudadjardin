@@ -34,6 +34,8 @@ export default function NeighborhoodMap({
   }, [onSelect, onPoint, onInvalid]);
   useEffect(() => {
     if (!container.current) return;
+    // Next.js does not emit the worker and its shared module together.
+    maplibregl.setWorkerUrl("/maplibre/maplibre-gl-worker.mjs");
     const m = new maplibregl.Map({
       container: container.current,
       style: baseStyle(),
@@ -58,11 +60,12 @@ export default function NeighborhoodMap({
       new maplibregl.NavigationControl({ showCompass: false }),
       "bottom-right",
     );
-    m.on("error", () =>
+    m.on("error", (event) => {
+      console.error("Error de cartografía (MapLibre):", event.error);
       setError(
         "La cartografía no pudo cargarse completamente. Verificá tu conexión o el proveedor de mapas.",
-      ),
-    );
+      );
+    });
     m.on("load", () => {
       for (const layer of m.getStyle().layers || []) {
         const id = layer.id.toLowerCase();

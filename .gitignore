@@ -6,3 +6,6 @@ generated/qr/
 .checks/
 *.tsbuildinfo
 *.log
+supabase/.temp/
+.vercel/
+/public/maplibre/

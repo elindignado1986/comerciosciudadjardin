@@ -1,6 +1,7 @@
 import { GeorefProvider, OsmProvider } from "@/lib/geocoding/providers";
 import { apiError, rateLimit } from "@/lib/security";
 import { configured } from "@/lib/supabase/server";
+import { isInsideCiudadJardin } from "@/lib/map/boundary";
 export async function GET(req: Request) {
   try {
     if (configured()) await rateLimit(req, "geocode", 60);
@@ -18,20 +19,13 @@ export async function GET(req: Request) {
         ...results,
         ...(await new OsmProvider().search(q).catch(() => [])),
       ];
-    const streets = results.length
-      ? []
-      : await primary
-          .streets(q.replace(/\d+.*/, "").trim())
-          .then((d) =>
-            (d.calles || []).map((c: { nombre: string }) => c.nombre),
-          )
-          .catch(() => []);
+    results = results.filter((r) => isInsideCiudadJardin(r.lat, r.lng));
     return Response.json({
       results,
-      streets,
+      streets: [],
       message: results.length
         ? ""
-        : "No encontramos una ubicación precisa. Podés marcar el comercio manualmente en el mapa.",
+        : "No encontramos esa dirección dentro de Ciudad Jardín. Podés marcar el comercio manualmente en el mapa.",
     });
   } catch (e) {
     return apiError(e);

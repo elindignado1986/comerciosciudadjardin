@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Search, ArrowUpRight } from "lucide-react";
 import type { SearchResult } from "@/lib/types";
 export default function AddressSearch({
@@ -7,6 +7,7 @@ export default function AddressSearch({
 }: {
   onResult: (result: SearchResult) => void;
 }) {
+  const requestId = useRef(0);
   const [q, setQ] = useState(""),
     [results, setResults] = useState<SearchResult[]>([]),
     [streets, setStreets] = useState<string[]>([]),
@@ -14,18 +15,23 @@ export default function AddressSearch({
     [message, setMessage] = useState("");
   async function search() {
     if (q.trim().length < 3) return;
+    const id = ++requestId.current;
     setBusy(true);
+    setResults([]);
+    setStreets([]);
     setMessage("");
     try {
       const r = await fetch(`/api/geocode?q=${encodeURIComponent(q)}`);
       const d = await r.json();
+      if (id !== requestId.current) return;
       setResults(d.results || []);
       setStreets(d.streets || []);
       setMessage(d.error || d.message || "");
     } catch {
+      if (id !== requestId.current) return;
       setMessage("No pudimos buscar. Podés señalar la ubicación en el mapa.");
     } finally {
-      setBusy(false);
+      if (id === requestId.current) setBusy(false);
     }
   }
   return (
@@ -35,14 +41,21 @@ export default function AddressSearch({
         <input
           aria-label="Buscar calle y altura"
           value={q}
-          onChange={(e) => setQ(e.target.value)}
+          onChange={(e) => {
+            requestId.current++;
+            setQ(e.target.value);
+            setResults([]);
+            setStreets([]);
+            setMessage("");
+            setBusy(false);
+          }}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
               e.preventDefault();
               void search();
             }
           }}
-          placeholder="Buscá una calle y altura"
+          placeholder="Calle y altura en Ciudad Jardín"
         />
         <button
           type="button"
@@ -66,7 +79,9 @@ export default function AddressSearch({
                   }
                   onResult(r);
                   setResults([]);
-                  setMessage("Ubicación aproximada. Revisá el marcador.");
+                  setMessage(
+                    "Ubicación aproximada: si no coincide con el comercio, tocá el mapa o arrastrá el marcador hasta su entrada.",
+                  );
                 }}
               >
                 {r.label}

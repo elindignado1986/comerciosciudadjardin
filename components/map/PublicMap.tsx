@@ -90,8 +90,13 @@ export default function PublicMap() {
             onResult={(r) => {
               setFocus([r.lng, r.lat]);
               setPoint([r.lng, r.lat]);
+              setSelected(null);
             }}
           />
+          <p className="field-help">
+            Tocá el mapa para marcar un comercio y sumarlo. Podés arrastrar el
+            marcador hasta su entrada.
+          </p>
           <div className="filter-row" aria-label="Filtrar por adhesión">
             {[
               ["ALL", "Todos"],
@@ -194,7 +199,19 @@ export default function PublicMap() {
         <section className="map-region" aria-label="Explorar mapa">
           <MapLoader
             businesses={visible}
-            onSelect={setSelected}
+            onSelect={(business) => {
+              setSelected(business);
+              setPoint(null);
+            }}
+            editable
+            onPoint={(p) => {
+              setPoint(p);
+              setSelected(null);
+              setNotice("");
+            }}
+            onInvalid={() =>
+              setNotice("Elegí una ubicación dentro de Ciudad Jardín.")
+            }
             focus={focus}
             point={point}
           />
@@ -218,6 +235,28 @@ export default function PublicMap() {
               <span /> Límite de Ciudad Jardín
             </div>
           </div>
+          {point && !selected && (
+            <article className="selected-card">
+              <button
+                className="icon-button close"
+                aria-label="Cancelar ubicación"
+                onClick={() => setPoint(null)}
+              >
+                <X size={18} />
+              </button>
+              <h2>Sumar un comercio acá</h2>
+              <p>
+                Ubicá el marcador sobre la entrada. En el siguiente paso
+                completás los datos y la adhesión propuesta.
+              </p>
+              <Link
+                className="button button-dark"
+                href={`/sumar?lat=${point[1]}&lng=${point[0]}`}
+              >
+                Sumar comercio <Plus size={16} />
+              </Link>
+            </article>
+          )}
           {selected && (
             <article className="selected-card">
               <button

@@ -19,6 +19,8 @@ En PowerShell con scripts deshabilitados, usar `npm.cmd` en lugar de `npm`. Abri
 
 ## Configuración externa necesaria
 
+El worker de MapLibre y su módulo compartido se copian desde la dependencia instalada a `public/maplibre/` automáticamente antes de `npm run dev` y `npm run build`. Estos archivos generados no se versionan. El mapa usa una URL local explícita para que Next.js pueda servir ambos módulos correctamente.
+
 1. Crear un proyecto Supabase. En Settings → API Keys obtener la publishable key (`sb_publishable_...`) y la secret key (`sb_secret_...`). Copiar URL y ambas claves en `.env.local` usando los nombres de `.env.example`.
 2. Ejecutar los SQL de `supabase/migrations/` en orden por nombre, primero esquema y después boundary, mediante SQL Editor o Supabase CLI. La geometría viene incluida: no hay que dibujar límites a mano.
 3. Habilitar Google en Supabase Auth. En Google Cloud, crear OAuth client de tipo Web, configurar pantalla de consentimiento, usuarios de prueba si corresponde y callback `https://PROJECT_REF.supabase.co/auth/v1/callback`. Pegar client ID y secret en Supabase, nunca en el navegador de esta aplicación.

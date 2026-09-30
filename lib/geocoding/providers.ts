@@ -1,4 +1,4 @@
-import { isInsideCiudadJardin, center } from "@/lib/map/boundary";
+import { isInsideCiudadJardin, center, bounds } from "@/lib/map/boundary";
 import type { SearchResult } from "@/lib/types";
 export interface GeocoderProvider {
   search(query: string): Promise<SearchResult[]>;
@@ -17,7 +17,7 @@ async function json(url: string) {
 export class GeorefProvider implements GeocoderProvider {
   async streets(name: string) {
     return json(
-      `${base}/calles?${new URLSearchParams({ nombre: name, provincia: "06", departamento: "Tres de Febrero", max: "5" })}`,
+      `${base}/calles?${new URLSearchParams({ nombre: name, provincia: "06", departamento: "Tres de Febrero", localidad: "0684001003", max: "5" })}`,
     );
   }
   async search(query: string): Promise<SearchResult[]> {
@@ -28,6 +28,7 @@ export class GeorefProvider implements GeocoderProvider {
       direccion: normalized,
       provincia: "06",
       departamento: "Tres de Febrero",
+      localidad: "0684001003",
       max: "8",
     });
     const data = await json(`${base}/direcciones?${params}`);
@@ -38,7 +39,9 @@ export class GeorefProvider implements GeocoderProvider {
       }) => {
         const lat = d.ubicacion?.lat,
           lng = d.ubicacion?.lon;
-        return typeof lat === "number" && typeof lng === "number"
+        return typeof lat === "number" &&
+          typeof lng === "number" &&
+          isInsideCiudadJardin(lat, lng)
           ? [
               {
                 label: d.nomenclatura,
@@ -68,7 +71,7 @@ export class OsmProvider implements GeocoderProvider {
   async search(query: string): Promise<SearchResult[]> {
     if (!this.url) return [];
     const data = await json(
-      `${this.url}/api/?${new URLSearchParams({ q: `${query} Ciudad Jardín Buenos Aires`, lat: String(center[1]), lon: String(center[0]), limit: "5" })}`,
+      `${this.url}/api/?${new URLSearchParams({ q: `${query} Ciudad Jardín Buenos Aires`, lat: String(center[1]), lon: String(center[0]), bbox: bounds.join(","), limit: "5" })}`,
     );
     return (data.features || []).flatMap(
       (f: {
@@ -77,6 +80,10 @@ export class OsmProvider implements GeocoderProvider {
       }) => {
         const [lng, lat] = f.geometry.coordinates,
           p = f.properties;
+        if (!isInsideCiudadJardin(lat, lng)) return [];
+        // A street centroid is not a match for a requested house number.
+        const houseNumber = [...query.matchAll(/\b(\d+)\b/g)].at(-1)?.[1];
+        if (houseNumber && p.housenumber !== houseNumber) return [];
         return [
           {
             label: [p.name, p.street, p.housenumber, p.city]
